@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drift Roads — Endless Relaxing Drive</title>
+  <meta name="description"
+    content="A relaxing, endless procedural driving experience with smooth music and beautiful landscapes.">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      overflow: hidden;
+      font-family: 'Outfit', sans-serif;
+      background: #000;
+      color: #fff;
+    }
+
+    #canvas {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+    }
+
+    /* ============================================================
+       SPLASH
+    ============================================================ */
+    #splash {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse at 50% 60%, #1a1a3e 0%, #08080f 100%);
+      transition: opacity 0.9s ease;
+    }
+
+    #splash.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #splashStars {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .star {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: #fff;
+      border-radius: 50%;
+      animation: twinkle var(--dur) ease-in-out infinite var(--delay);
+    }
+
+    @keyframes twinkle {
+
+      0%,
+      100% {
+        opacity: 0.15;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 1;
+        transform: scale(1.8);
+      }
+    }
+
+    .splash-logo {
+      font-size: clamp(2.8rem, 8vw, 6.5rem);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      background: linear-gradient(135deg, #a8edea 0%, #c3b1e1 50%, #fed6e3 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: floatY 3s ease-in-out infinite;
+      text-align: center;
+    }
+
+    @keyframes floatY {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-12px);
+      }
+    }
+
+    .splash-sub {
+      margin: 0.5rem 0 3.5rem;
+      font-size: 0.88rem;
+      font-weight: 300;
+      letter-spacing: 0.38em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.35);
+    }
+
+    .start-btn {
+      padding: 0.9rem 3.2rem;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 400;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 4px;
+      transition: all 0.3s ease;
+    }
+
+    .start-btn:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.7);
+      box-shadow: 0 0 40px rgba(168, 237, 234, 0.18);
+      transform: scale(1.04);
+    }
+
+    .splash-hint {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.72rem;
+      color: rgba(255, 255, 255, 0.22);
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+      text-transform: uppercase;
+    }
+
+    /* ============================================================
+       HUD — outermost container
+    ============================================================ */
+    #hud {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      pointer-events: none;
+      display: none;
+    }
+
+    /* ============================================================
+       DISTANCE — bottom left
+    ============================================================ */
+    .hud-dist {
+      position: absolute;
+      bottom: 3.8rem;
+      left: 2.4rem;
+    }
+
+    .hud-dist-num {
+      font-size: 1.5rem;
+      font-weight: 300;
+      letter-spacing: 0.06em;
+      color: rgba(255, 255, 255, 0.75);
+      line-height: 1;
+    }
+
+    .hud-dist-lbl {
+      font-size: 0.55rem;
+      font-weight: 400;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.3);
+      margin-top: 3px;
+    }
+
+    /* ============================================================
+       SPEED — bottom right
+    ============================================================ */
+    .hud-speed {
+      position: absolute;
+      bottom: 3.8rem;
+      right: 2.4rem;
+      text-align: right;
+    }
+
+    .hud-speed-row {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      justify-content: flex-end;
+    }
+
+    .hud-speed-num {
+      font-size: 1.5rem;
+      font-weight: 300;
+      letter-spacing: 0.06em;
+      color: rgba(255, 255, 255, 0.75);
+      line-height: 1;
+    }
+
+    .hud-speed-lock {
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.3);
+      margin-bottom: 1px;
+    }
+
+    .hud-speed-lbl {
+      font-size: 0.55rem;
+      font-weight: 400;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.3);
+      margin-top: 3px;
+    }
+
+    /* ============================================================
+       BOTTOM NAV BAR
+    ============================================================ */
+    .hud-bottom-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2.8rem;
+      display: flex;
+      align-items: center;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.55) 0%, transparent 100%);
+      padding: 0 2.4rem;
+      pointer-events: all;
+    }
+
+    /* Left nav group */
+    .hud-nav-left {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex: 1;
+    }
+
+    .hud-nav-item {
+      font-size: 0.65rem;
+      font-weight: 400;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.42);
+      cursor: pointer;
+      padding: 0 1.1rem;
+      height: 2.8rem;
+      display: flex;
+      align-items: center;
+      border: none;
+      background: none;
+      font-family: 'Outfit', sans-serif;
+      transition: color 0.2s;
+      position: relative;
+    }
+
+    .hud-nav-item:first-child {
+      padding-left: 0;
+    }
+
+    .hud-nav-item::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 1px;
+      height: 0.7rem;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .hud-nav-item:last-child::after {
+      display: none;
+    }
+
+    .hud-nav-item:hover,
+    .hud-nav-item.active {
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .hud-nav-item.active::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 2px;
+    }
+
+    /* AUTODRIVE center */
+    .hud-nav-center {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .hud-autodrive-btn {
+      font-size: 0.65rem;
+      font-weight: 400;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.38);
+      cursor: pointer;
+      padding: 0 1.2rem;
+      height: 2.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: none;
+      background: none;
+      font-family: 'Outfit', sans-serif;
+      transition: color 0.2s;
+    }
+
+    .hud-autodrive-btn:hover {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .hud-autodrive-btn.on {
+      color: rgba(168, 237, 234, 0.85);
+    }
+
+    .hud-autodrive-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.25);
+      transition: background 0.3s;
+      flex-shrink: 0;
+    }
+
+    .hud-autodrive-btn.on .hud-autodrive-dot {
+      background: rgba(168, 237, 234, 0.9);
+    }
+
+    /* Right icon group */
+    .hud-nav-right {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-left: auto;
+    }
+
+    .hud-icon-btn {
+      font-size: 0.65rem;
+      font-weight: 400;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.38);
+      cursor: pointer;
+      padding: 0 0.9rem;
+      height: 2.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      border: none;
+      background: none;
+      font-family: 'Outfit', sans-serif;
+      transition: color 0.2s;
+      position: relative;
+    }
+
+    .hud-icon-btn::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 1px;
+      height: 0.7rem;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .hud-icon-btn:first-child::before {
+      display: none;
+    }
+
+    .hud-icon-btn:hover {
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .hud-icon-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+      flex-shrink: 0;
+    }
+
+    /* ============================================================
+       TRACK NAME (shown above bottom bar when music plays)
+    ============================================================ */
+    .hud-track {
+      position: absolute;
+      bottom: 3.1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.62rem;
+      font-weight: 300;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.28);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 260px;
+      pointer-events: none;
+      transition: opacity 0.4s;
+    }
+
+    .hud-track.hidden {
+      opacity: 0;
+    }
+
+    /* ============================================================
+       VOLUME SLIDER POPUP (appears above audio btn on hover)
+    ============================================================ */
+    .vol-popup {
+      position: absolute;
+      bottom: 3.2rem;
+      right: 0;
+      background: rgba(12, 12, 18, 0.82);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 0.7rem 0.9rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      transform: translateY(4px);
+      min-width: 140px;
+    }
+
+    .vol-popup.open {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(0);
+    }
+
+    .vol-popup-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      width: 100%;
+    }
+
+    .vol-popup-label {
+      font-size: 0.58rem;
+      letter-spacing: 0.2em;
+      color: rgba(255, 255, 255, 0.3);
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    input[type=range].vol {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type=range].vol::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 10px;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+    }
+
+    .track-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tBtn {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.5);
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 2px;
+      transition: color 0.2s;
+    }
+
+    .tBtn:hover {
+      color: #fff;
+    }
+
+    #trackNamePopup {
+      font-size: 0.62rem;
+      color: rgba(255, 255, 255, 0.45);
+      letter-spacing: 0.1em;
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ============================================================
+       SETTINGS PANEL (slide-in from right)
+    ============================================================ */
+    #settingsPanel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 280px;
+      height: 100%;
+      background: rgba(6, 6, 10, 0.92);
+      backdrop-filter: blur(28px);
+      border-left: 1px solid rgba(255, 255, 255, 0.06);
+      z-index: 200;
+      padding: 4rem 1.4rem 2rem;
+      transform: translateX(100%);
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.8rem;
+      pointer-events: all;
+    }
+
+    #settingsPanel.open {
+      transform: translateX(0);
+    }
+
+    .s-close {
+      position: absolute;
+      top: 1.2rem;
+      right: 1.2rem;
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 1.1rem;
+      cursor: pointer;
+      letter-spacing: 0.1em;
+      font-family: 'Outfit', sans-serif;
+      transition: color 0.2s;
+    }
+
+    .s-close:hover {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .s-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+    }
+
+    .s-section h3 {
+      font-size: 0.55rem;
+      font-weight: 500;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.22);
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .s-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .s-label {
+      font-size: 0.82rem;
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .biome-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.4rem;
+    }
+
+    .biome-btn {
+      padding: 0.5rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 6px;
+      color: rgba(255, 255, 255, 0.45);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      letter-spacing: 0.05em;
+    }
+
+    .biome-btn:hover,
+    .biome-btn.active {
+      background: rgba(255, 255, 255, 0.07);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    /* Toggle switch */
+    .tog {
+      position: relative;
+      width: 36px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .tog input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .tog-track {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background 0.3s;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .tog input:checked+.tog-track {
+      background: rgba(168, 237, 234, 0.35);
+      border-color: rgba(168, 237, 234, 0.3);
+    }
+
+    .tog-track::after {
+      content: '';
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.3s;
+    }
+
+    .tog input:checked+.tog-track::after {
+      transform: translateX(16px);
+      background: #a8edea;
+    }
+
+    /* Range */
+    input[type=range].s-range {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type=range].s-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: rgba(255, 255, 255, 0.75);
+      border-radius: 50%;
+    }
+
+    .load-btn {
+      width: 100%;
+      padding: 0.6rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      color: rgba(255, 255, 255, 0.5);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .load-btn:hover {
+      background: rgba(255, 255, 255, 0.09);
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .car-colors {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .car-color-chip {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .car-color-chip:hover {
+      transform: scale(1.15);
+    }
+
+    .car-color-chip.chosen {
+      border-color: rgba(255, 255, 255, 0.9);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Canvas -->
+  <canvas id="canvas"></canvas>
+
+  <!-- Audio -->
+  <audio id="audioEl" loop></audio>
+  <input type="file" id="musicInput" accept=".mp3,.ogg,.wav,.m4a,.flac" multiple style="display:none"
+    onchange="Audio.loadFiles(this.files)">
+
+  <!-- ============================================================
+     SPLASH SCREEN
+============================================================ -->
+  <div id="splash">
+    <div id="splashStars"></div>
+    <div class="splash-logo">DRIFT ROADS</div>
+    <div class="splash-sub">An Endless Relaxing Drive</div>
+    <button class="start-btn" onclick="startDrive()">Begin Journey</button>
+    <div class="splash-hint">W / ↑ Accelerate &nbsp;·&nbsp; S / ↓ Brake &nbsp;·&nbsp; A / D Steer &nbsp;·&nbsp; Works on
+      mobile</div>
+  </div>
+
+  <!-- ============================================================
+     HUD
+============================================================ -->
+  <div id="hud">
+
+    <!-- Distance — bottom left -->
+    <div class="hud-dist">
+      <div class="hud-dist-num" id="distVal">0.0</div>
+      <div class="hud-dist-lbl">Kilometers</div>
+    </div>
+
+    <!-- Speed — bottom right -->
+    <div class="hud-speed">
+      <div class="hud-speed-row">
+        <div class="hud-speed-num" id="speedVal">0</div>
+        <div class="hud-speed-lock" id="speedLockIcon">🔒</div>
+      </div>
+      <div class="hud-speed-lbl">Kilometers per hour</div>
+    </div>
+
+    <!-- Track name above bar -->
+    <div class="hud-track hidden" id="trackNameBar">♪ &nbsp;<span id="trackNameInner">—</span></div>
+
+    <!-- ==================== BOTTOM BAR ==================== -->
+    <div class="hud-bottom-bar">
+
+      <!-- Left nav -->
+      <div class="hud-nav-left">
+        <button class="hud-nav-item active" id="nav-world" onclick="openWorldPanel()">World</button>
+        <button class="hud-nav-item" id="nav-style" onclick="openStylePanel()">Style</button>
+        <button class="hud-nav-item" id="nav-vehicle" onclick="openVehiclePanel()">Vehicle</button>
+      </div>
+
+      <!-- AUTODRIVE center -->
+      <div class="hud-nav-center">
+        <button class="hud-autodrive-btn" id="autodriveBtn" onclick="toggleAutodrive()">
+          <span class="hud-autodrive-dot"></span>
+          Autodrive
+        </button>
+      </div>
+
+      <!-- Right icons -->
+      <div class="hud-nav-right" style="position:relative;">
+        <!-- Music (with popup) -->
+        <div style="position:relative;">
+          <button class="hud-icon-btn" id="musicToggleBtn" onclick="toggleMusicPopup()">
+            <!-- Speaker icon -->
+            <svg viewBox="0 0 24 24">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
+            </svg>
+          </button>
+          <!-- Volume + track popup -->
+          <div class="vol-popup" id="volPopup">
+            <div style="width:100%;">
+              <div id="trackNamePopup">No music loaded</div>
+            </div>
+            <div class="track-controls">
+              <button class="tBtn" onclick="Audio.prev()">⏮</button>
+              <button class="tBtn" id="playPauseBtn" onclick="Audio.togglePlay()">▶</button>
+              <button class="tBtn" onclick="Audio.next()">⏭</button>
+            </div>
+            <div class="vol-popup-row">
+              <span class="vol-popup-label">Vol</span>
+              <input type="range" class="vol" id="volumeSlider" min="0" max="1" step="0.01" value="0.7"
+                oninput="Audio.setVolume(this.value)">
+            </div>
+            <button class="load-btn" style="margin-top:0.2rem;"
+              onclick="document.getElementById('musicInput').click()">📂 Load MP3</button>
+          </div>
+        </div>
+
+        <!-- Settings -->
+        <button class="hud-icon-btn" onclick="toggleSettings()">
+          <!-- Gear icon -->
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+          </svg>
+        </button>
+      </div>
+
+    </div><!-- /.hud-bottom-bar -->
+
+  </div><!-- /#hud -->
+
+  <!-- ============================================================
+     SETTINGS PANEL (slide-in)
+============================================================ -->
+  <div id="settingsPanel">
+    <button class="s-close" onclick="toggleSettings()">✕</button>
+
+    <!-- World / Environment -->
+    <div class="s-section" id="panel-world">
+      <h3>🌍 World</h3>
+      <div class="biome-grid">
+        <button class="biome-btn active" id="biome-meadow" onclick="setBiome('meadow')">🌿 Meadow</button>
+        <button class="biome-btn" id="biome-autumn" onclick="setBiome('autumn')">🍂 Autumn</button>
+        <button class="biome-btn" id="biome-snow" onclick="setBiome('snow')">❄️ Snow</button>
+        <button class="biome-btn" id="biome-desert" onclick="setBiome('desert')">🏜️ Desert</button>
+      </div>
+      <div class="s-row">
+        <span class="s-label">Time of Day</span>
+        <input type="range" class="s-range" min="0" max="1" step="0.01" value="0.35" oninput="setTimeOfDay(this.value)">
+      </div>
+      <div class="s-row">
+        <span class="s-label">View Distance</span>
+        <input type="range" class="s-range" min="80" max="600" step="20" value="260" oninput="setFog(this.value)">
+      </div>
+      <div class="s-row">
+        <span class="s-label">Rain</span>
+        <label class="tog">
+          <input type="checkbox" id="rainTog" onchange="setWeather(this.checked?'rain':'clear')">
+          <span class="tog-track"></span>
+        </label>
+      </div>
+      <div class="s-row">
+        <span class="s-label">Snow</span>
+        <label class="tog">
+          <input type="checkbox" id="snowTog"
+            onchange="document.getElementById('rainTog').checked=false; setWeather(this.checked?'snow':'clear')">
+          <span class="tog-track"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Vehicle -->
+    <div class="s-section" id="panel-vehicle">
+      <h3>🚗 Vehicle</h3>
+      <div class="s-row">
+        <span class="s-label">Speed Limit</span>
+        <input type="range" class="s-range" min="20" max="200" step="10" value="120"
+          oninput="setSpeedLimit(this.value)">
+      </div>
+    </div>
+
+    <!-- Style / Car Color -->
+    <div class="s-section" id="panel-style">
+      <h3>🎨 Style</h3>
+      <div class="car-colors" id="carColors"></div>
+    </div>
+
+  </div>
+
+  <!-- Three.js -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+
+  <!-- Game modules — ORDER MATTERS -->
+  <script src="js/config.js"></script>
+  <script src="js/noise.js"></script>
+  <script src="js/scene.js"></script>
+  <script src="js/road.js"></script>
+  <script src="js/vehicle.js"></script>
+  <script src="js/traffic.js"></script>
+  <script src="js/environment.js"></script>
+  <script src="js/weather.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+
+  <!-- Car color chips -->
+  <script>
+    const CAR_COLORS = [
+      { hex: 0xeeeeee, css: '#eee' },
+      { hex: 0x1a6fcf, css: '#1a6fcf' },
+      { hex: 0xe02020, css: '#e02020' },
+      { hex: 0x20a020, css: '#20a020' },
+      { hex: 0xf0a000, css: '#f0a000' },
+      { hex: 0x9020c0, css: '#9020c0' },
+      { hex: 0x111111, css: '#222' },
+      { hex: 0xff69b4, css: '#ff69b4' },
+    ];
+    const grid = document.getElementById('carColors');
+    CAR_COLORS.forEach((c, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'car-color-chip' + (i === 0 ? ' chosen' : '');
+      chip.style.background = c.css;
+      chip.title = c.css;
+      chip.onclick = () => {
+        document.querySelectorAll('.car-color-chip').forEach(x => x.classList.remove('chosen'));
+        chip.classList.add('chosen');
+        Vehicle.setColor(c.hex);
+      };
+      grid.appendChild(chip);
+    });
+
+    // Music popup toggle
+    let _musicPopupOpen = false;
+    function toggleMusicPopup() {
+      _musicPopupOpen = !_musicPopupOpen;
+      document.getElementById('volPopup').classList.toggle('open', _musicPopupOpen);
+    }
+    // Close popup when clicking outside
+    document.addEventListener('click', e => {
+      if (_musicPopupOpen && !e.target.closest('#volPopup') && !e.target.closest('#musicToggleBtn')) {
+        _musicPopupOpen = false;
+        document.getElementById('volPopup').classList.remove('open');
+      }
+    });
+
+    // Nav panel clicks
+    function openWorldPanel() { toggleSettings(true); }
+    function openStylePanel() { toggleSettings(true); }
+    function openVehiclePanel() { toggleSettings(true); }
+
+    // Autodrive toggle via bottom bar button
+    function toggleAutodrive() {
+      G.autodrive = !G.autodrive;
+      const btn = document.getElementById('autodriveBtn');
+      btn.classList.toggle('on', G.autodrive);
+      if (G.autodrive && G.carSpeed < G.maxSpeed * 0.3) G.carSpeed = G.maxSpeed * 0.3;
+    }
+
+    // Splash star gen
+    (function () {
+      const cont = document.getElementById('splashStars');
+      for (let i = 0; i < 120; i++) {
+        const s = document.createElement('div');
+        s.className = 'star';
+        s.style.left = Math.random() * 100 + '%';
+        s.style.top = Math.random() * 100 + '%';
+        s.style.setProperty('--dur', (2 + Math.random() * 4) + 's');
+        s.style.setProperty('--delay', (Math.random() * 4) + 's');
+        cont.appendChild(s);
+      }
+    })();
+  </script>
+
+</body>
+
+</html>
