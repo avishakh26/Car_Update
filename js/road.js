@@ -3,9 +3,9 @@
 // ============================================================
 
 const Road = (() => {
-  const SEG_LEN   = 50;   // units between control points
-  const ROAD_W    = 10;   // road width
-  const N_POINTS  = 80;   // control points to maintain
+  const SEG_LEN = 50;   // units between control points
+  const ROAD_W = 10;   // road width
+  const N_POINTS = 80;   // control points to maintain
   const REBUILD_T = 0.45; // rebuild when car reaches this t
 
   let pts = [];           // THREE.Vector3 control points
@@ -63,26 +63,26 @@ const Road = (() => {
       const hw = ROAD_W / 2;
 
       const L = p0.clone().addScaledVector(right, -hw); L.y += 0.05;
-      const R = p0.clone().addScaledVector(right,  hw); R.y += 0.05;
+      const R = p0.clone().addScaledVector(right, hw); R.y += 0.05;
       const b = i * 2;
-      verts.push(L.x,L.y,L.z, R.x,R.y,R.z);
-      uvs.push(0,i/samples.length, 1,i/samples.length);
+      verts.push(L.x, L.y, L.z, R.x, R.y, R.z);
+      uvs.push(0, i / samples.length, 1, i / samples.length);
       if (i < samples.length - 2) {
-        idx.push(b,b+1,b+2, b+1,b+3,b+2);
+        idx.push(b, b + 1, b + 2, b + 1, b + 3, b + 2);
       }
       // Center dashes
       if (i % 24 < 12) {
         const C = p0.clone(); C.y += 0.10;
         const lb = lVerts.length / 3;
         const CL = C.clone().addScaledVector(right, -0.18);
-        const CR = C.clone().addScaledVector(right,  0.18);
-        lVerts.push(CL.x,CL.y,CL.z, CR.x,CR.y,CR.z);
-        if (lb >= 2) lIdx.push(lb-2,lb-1,lb, lb-1,lb+1,lb);
+        const CR = C.clone().addScaledVector(right, 0.18);
+        lVerts.push(CL.x, CL.y, CL.z, CR.x, CR.y, CR.z);
+        if (lb >= 2) lIdx.push(lb - 2, lb - 1, lb, lb - 1, lb + 1, lb);
       }
-      
+
       // Wooden Fences (Post-and-rail style)
       const vOff = bVerts.length / 3;
-      
+
       const addRail = (yBottom, yTop) => {
         const BI = p0.clone().addScaledVector(right, -4.50); BI.y += yBottom;
         const TI = p0.clone().addScaledVector(right, -4.50); TI.y += yTop;
@@ -90,17 +90,17 @@ const Road = (() => {
         const BO = p0.clone().addScaledVector(right, -4.56); BO.y += yBottom;
         return [BI, TI, TO, BO];
       };
-      
+
       const addRailR = (yBottom, yTop) => {
-        const BI = p0.clone().addScaledVector(right,  4.50); BI.y += yBottom;
-        const TI = p0.clone().addScaledVector(right,  4.50); TI.y += yTop;
-        const TO = p0.clone().addScaledVector(right,  4.56); TO.y += yTop;
-        const BO = p0.clone().addScaledVector(right,  4.56); BO.y += yBottom;
+        const BI = p0.clone().addScaledVector(right, 4.50); BI.y += yBottom;
+        const TI = p0.clone().addScaledVector(right, 4.50); TI.y += yTop;
+        const TO = p0.clone().addScaledVector(right, 4.56); TO.y += yTop;
+        const BO = p0.clone().addScaledVector(right, 4.56); BO.y += yBottom;
         return [BI, TI, TO, BO];
       };
 
       const pushV = (vArr) => vArr.forEach(v => bVerts.push(v.x, v.y, v.z));
-      
+
       pushV(addRail(0.55, 0.65));   // Left Upper
       pushV(addRail(0.30, 0.40));   // Left Lower
       pushV(addRailR(0.55, 0.65));  // Right Upper
@@ -109,13 +109,13 @@ const Road = (() => {
       if (i < samples.length - 2) {
         const pushRailIdx = (base, isRight) => {
           if (isRight) {
-            bIdx.push(base, base+1, base+16, base+1, base+17, base+16);       // inner
-            bIdx.push(base+1, base+2, base+17, base+2, base+18, base+17);     // top
-            bIdx.push(base+2, base+3, base+18, base+3, base+19, base+18);     // outer
+            bIdx.push(base, base + 1, base + 16, base + 1, base + 17, base + 16);       // inner
+            bIdx.push(base + 1, base + 2, base + 17, base + 2, base + 18, base + 17);     // top
+            bIdx.push(base + 2, base + 3, base + 18, base + 3, base + 19, base + 18);     // outer
           } else {
-            bIdx.push(base, base+16, base+1, base+1, base+16, base+17);       // inner
-            bIdx.push(base+1, base+17, base+2, base+2, base+17, base+18);     // top
-            bIdx.push(base+2, base+18, base+3, base+3, base+18, base+19);     // outer
+            bIdx.push(base, base + 16, base + 1, base + 1, base + 16, base + 17);       // inner
+            bIdx.push(base + 1, base + 17, base + 2, base + 2, base + 17, base + 18);     // top
+            bIdx.push(base + 2, base + 18, base + 3, base + 3, base + 18, base + 19);     // outer
           }
         };
         pushRailIdx(vOff, false);      // LUR
@@ -131,24 +131,24 @@ const Road = (() => {
           const sign = isRight ? 1 : -1;
           const c = p0.clone().addScaledVector(right, sign * 4.53);
           const hw = 0.05, hd = 0.05, h = 0.8;
-          
+
           const v = [
             c.clone().addScaledVector(right, -hw).addScaledVector(dir, -hd), // 0: BLB
-            c.clone().addScaledVector(right,  hw).addScaledVector(dir, -hd), // 1: BRB
-            c.clone().addScaledVector(right,  hw).addScaledVector(dir,  hd), // 2: BRF
-            c.clone().addScaledVector(right, -hw).addScaledVector(dir,  hd), // 3: BLF
+            c.clone().addScaledVector(right, hw).addScaledVector(dir, -hd), // 1: BRB
+            c.clone().addScaledVector(right, hw).addScaledVector(dir, hd), // 2: BRF
+            c.clone().addScaledVector(right, -hw).addScaledVector(dir, hd), // 3: BLF
             c.clone().addScaledVector(right, -hw).addScaledVector(dir, -hd), // 4: TLB
-            c.clone().addScaledVector(right,  hw).addScaledVector(dir, -hd), // 5: TRB
-            c.clone().addScaledVector(right,  hw).addScaledVector(dir,  hd), // 6: TRF
-            c.clone().addScaledVector(right, -hw).addScaledVector(dir,  hd)  // 7: TLF
+            c.clone().addScaledVector(right, hw).addScaledVector(dir, -hd), // 5: TRB
+            c.clone().addScaledVector(right, hw).addScaledVector(dir, hd), // 6: TRF
+            c.clone().addScaledVector(right, -hw).addScaledVector(dir, hd)  // 7: TLF
           ];
           v[4].y += h; v[5].y += h; v[6].y += h; v[7].y += h;
           pushV(v);
-          
+
           const addQ = (v1, v2, v3, v4) => {
-            bIdx.push(poff+v1, poff+v2, poff+v3, poff+v1, poff+v3, poff+v4);
+            bIdx.push(poff + v1, poff + v2, poff + v3, poff + v1, poff + v3, poff + v4);
           };
-          
+
           addQ(1, 0, 4, 5); // Back (-Z)
           addQ(2, 1, 5, 6); // Right (+X)
           addQ(3, 2, 6, 7); // Front (+Z)
@@ -162,7 +162,7 @@ const Road = (() => {
 
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-    geo.setAttribute('uv',       new THREE.Float32BufferAttribute(uvs,   2));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geo.setIndex(idx);
     geo.computeVertexNormals();
 
@@ -190,7 +190,7 @@ const Road = (() => {
       }));
       scene.add(lineMesh);
     }
-    
+
     if (bVerts.length && bIdx.length) {
       const bg = new THREE.BufferGeometry();
       bg.setAttribute('position', new THREE.Float32BufferAttribute(bVerts, 3));
@@ -210,7 +210,7 @@ const Road = (() => {
   function buildTerrainSide(side) {
     const SIDE_W = 180, SIDE_SEGS_LAT = 24, CURVE_SEGS = 400;
     const pts2 = curve.getPoints(CURVE_SEGS);
-    const up3 = new THREE.Vector3(0,1,0);
+    const up3 = new THREE.Vector3(0, 1, 0);
     const verts = [], idxArr = [], normals = [];
 
     for (let i = 0; i <= CURVE_SEGS; i++) {
@@ -233,10 +233,10 @@ const Road = (() => {
       for (let s = 0; s < SIDE_SEGS_LAT; s++) {
         const a = i * (SIDE_SEGS_LAT + 1) + s;
         if (side === 1) {
-          idxArr.push(a, a+1, a+SIDE_SEGS_LAT+1, a+1, a+SIDE_SEGS_LAT+2, a+SIDE_SEGS_LAT+1);
+          idxArr.push(a, a + 1, a + SIDE_SEGS_LAT + 1, a + 1, a + SIDE_SEGS_LAT + 2, a + SIDE_SEGS_LAT + 1);
         } else {
           // Invert winding order for the left side so normals point UP instead of DOWN
-          idxArr.push(a, a+SIDE_SEGS_LAT+1, a+1, a+1, a+SIDE_SEGS_LAT+1, a+SIDE_SEGS_LAT+2);
+          idxArr.push(a, a + SIDE_SEGS_LAT + 1, a + 1, a + 1, a + SIDE_SEGS_LAT + 1, a + SIDE_SEGS_LAT + 2);
         }
       }
     }
@@ -259,7 +259,7 @@ const Road = (() => {
     if (terrainL) { scene.remove(terrainL); terrainL.geometry.dispose(); }
     if (terrainR) { scene.remove(terrainR); terrainR.geometry.dispose(); }
     terrainL = buildTerrainSide(-1); scene.add(terrainL);
-    terrainR = buildTerrainSide( 1); scene.add(terrainR);
+    terrainR = buildTerrainSide(1); scene.add(terrainR);
   }
 
   function buildAll() {
@@ -271,10 +271,10 @@ const Road = (() => {
   // Returns { pos, quat } for car placement at roadT + lateralOffset
   function getCarTransform() {
     const t = Math.min(G.roadT, 0.9999);
-    const roadPos  = curve.getPoint(t);
-    const tangent  = curve.getTangent(t).normalize();
-    const up3      = new THREE.Vector3(0, 1, 0);
-    const right3   = new THREE.Vector3().crossVectors(tangent, up3).normalize();
+    const roadPos = curve.getPoint(t);
+    const tangent = curve.getTangent(t).normalize();
+    const up3 = new THREE.Vector3(0, 1, 0);
+    const right3 = new THREE.Vector3().crossVectors(tangent, up3).normalize();
 
     const pos = roadPos.clone().addScaledVector(right3, G.lateralOffset);
     pos.y += 0.38; // sit car on road
@@ -296,18 +296,25 @@ const Road = (() => {
     // Regenerate when nearing the end
     if (G.roadT > REBUILD_T) {
       const drop = Math.floor(pts.length * 0.3);
+
+      // Calculate exact physical offset before splicing to prevent teleporting
+      const numSegments = pts.length - 1;
+      const currentSegmentIndex = G.roadT * numSegments;
+      const newSegmentIndex = currentSegmentIndex - drop;
+
       pts.splice(0, drop);
       for (let i = 0; i < drop; i++) pts.push(nextPoint(pts[pts.length - 1]));
+
       buildAll();
-      G.roadT = 0.08;
+      G.roadT = Math.max(0.01, newSegmentIndex / numSegments);
     }
   }
 
   function applyBiome() {
-    if (roadMesh)  roadMesh.material.color.setHex(BIOMES[G.biome].roadColor);
-    if (lineMesh)  lineMesh.material.color.setHex(BIOMES[G.biome].lineColor);
-    if (terrainL)  terrainL.material.color.setHex(BIOMES[G.biome].groundColor);
-    if (terrainR)  terrainR.material.color.setHex(BIOMES[G.biome].groundColor);
+    if (roadMesh) roadMesh.material.color.setHex(BIOMES[G.biome].roadColor);
+    if (lineMesh) lineMesh.material.color.setHex(BIOMES[G.biome].lineColor);
+    if (terrainL) terrainL.material.color.setHex(BIOMES[G.biome].groundColor);
+    if (terrainR) terrainR.material.color.setHex(BIOMES[G.biome].groundColor);
   }
 
   function getCurveLen() {
@@ -315,7 +322,7 @@ const Road = (() => {
   }
 
   function getCurvePoint(t) {
-    if (!curve) return new THREE.Vector3(0,0,-t*3000);
+    if (!curve) return new THREE.Vector3(0, 0, -t * 3000);
     return curve.getPoint(t);
   }
 
@@ -323,7 +330,7 @@ const Road = (() => {
 })();
 
 // _getPointAt: returns { pos, quat } for traffic module
-Road._getPointAt = function(t) {
+Road._getPointAt = function (t) {
   try {
     const _t = Math.max(0.001, Math.min(0.999, t));
     // Reuse getCarTransform logic but at arbitrary t
@@ -333,6 +340,6 @@ Road._getPointAt = function(t) {
     const result = Road.getCarTransform();
     G.roadT = savedT;
     return result;
-  } catch(e) { return null; }
+  } catch (e) { return null; }
 };
 Road._curveLen = 3000; // approximate, updated each frame

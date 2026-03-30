@@ -197,6 +197,7 @@ const Environment = (() => {
 
     [pineInst, pineTrunkInst, oakInst, oakTrunkInst, palmInst, palmTrunkInst, tamariskInst].forEach(m => {
       m.castShadow = true;
+      m.frustumCulled = false;
       scene.add(m);
     });
 
@@ -309,6 +310,8 @@ const Environment = (() => {
     grassInst2 = new THREE.InstancedMesh(geo, mat.clone(), GRASS_COUNT);
     grassInst.receiveShadow = false;
     grassInst2.receiveShadow = false;
+    grassInst.frustumCulled = false;
+    grassInst2.frustumCulled = false;
 
     _placeGrass();
     scene.add(grassInst);

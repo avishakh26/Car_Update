@@ -354,24 +354,26 @@ const Vehicle = (() => {
   }
 
   const wheelPositions = [
-    [-1.04, 0.40,  1.42],  // FL
-    [ 1.04, 0.40,  1.42],  // FR
+    [-1.04, 0.40, 1.42],  // FL
+    [1.04, 0.40, 1.42],  // FR
     [-1.04, 0.40, -1.42],  // RL
-    [ 1.04, 0.40, -1.42],  // RR
+    [1.04, 0.40, -1.42],  // RR
   ];
 
   const wheels = wheelPositions.map(p => buildWheel(p[0], p[1], p[2]));
 
-  // --- Headlight SpotLights ---
-  const headlightL = new THREE.SpotLight(0xfff5e0, 0, 80, Math.PI * 0.14, 0.35, 1.2);
-  headlightL.position.set(-0.68, 0.64, 2.2);
-  headlightL.target.position.set(-3, -1.5, -40);
-  root.add(headlightL); root.add(headlightL.target);
+  // --- Physically Correct SpotLights ---
+  const floodL = new THREE.PointLight(0xffffff, 0, 800, 2.0);
+  floodL.position.set(-8.0, 15.0, -10.0);
+  root.add(floodL);
 
-  const headlightR = new THREE.SpotLight(0xfff5e0, 0, 80, Math.PI * 0.14, 0.35, 1.2);
-  headlightR.position.set(0.68, 0.64, 2.2);
-  headlightR.target.position.set(3, -1.5, -40);
-  root.add(headlightR); root.add(headlightR.target);
+  const floodR = new THREE.PointLight(0xffffff, 0, 800, 2.0);
+  floodR.position.set(8.0, 15.0, -10.0);
+  root.add(floodR);
+  
+
+  
+
 
   // Physics state
   let steerAngle = 0;
@@ -396,18 +398,36 @@ const Vehicle = (() => {
 
     // --- Steering ---
     let steerInput = 0;
-    if (keys.left)  steerInput = -1;
-    if (keys.right) steerInput =  1;
-    if (G.autodrive) steerInput = -Math.sign(G.lateralOffset) * Math.min(Math.abs(G.lateralOffset) * 0.15, 1);
-
     const steerMax = 3.5;
-    const speedFactor = Math.max(0.3, 1 - G.carSpeed / maxSpd * 0.6);
-    G.lateralVel += steerInput * G.steerForce * speedFactor * dt;
-    G.lateralVel *= Math.pow(G.steerFriction, dt * 60);
-    G.lateralOffset += G.lateralVel * dt;
+
+    if (G.autodrive) {
+      steerInput = -Math.sign(G.lateralOffset) * Math.min(Math.abs(G.lateralOffset) * 0.15, 1);
+      G.targetOffset = G.lateralOffset; // Sync target so manual mode doesn't snap
+
+      G.lateralVel += steerInput * G.steerForce * dt;
+      G.lateralVel *= Math.pow(G.steerFriction, dt * 60);
+      G.lateralOffset += G.lateralVel * dt;
+    } else {
+      const oldOffset = G.lateralOffset;
+
+      // Extremely fast but mathematical lerp for snappy lane shifting
+      G.lateralOffset += (G.targetOffset - G.lateralOffset) * 22.0 * dt;
+
+      if (Math.abs(G.targetOffset - G.lateralOffset) < 0.01) {
+        G.lateralOffset = G.targetOffset;
+      }
+
+      // Reconstruct lateral velocity exactly for body roll formulas
+      G.lateralVel = (G.lateralOffset - oldOffset) / dt;
+
+      const diff = G.targetOffset - G.lateralOffset;
+      steerInput = Math.sign(diff) * Math.min(1, Math.abs(diff) * 1.5);
+    }
+
+    G.lateralVel = Math.max(-80, Math.min(80, G.lateralVel)); // Cap body roll
     G.lateralOffset = Math.max(-steerMax, Math.min(steerMax, G.lateralOffset));
 
-    steerAngle += (steerInput * 0.35 - steerAngle) * 0.25;
+    steerAngle += (steerInput * 0.35 - steerAngle) * 0.40;
 
     // --- Wheel spin ---
     spinAngle += (G.carSpeed / 0.40) * dt;
@@ -417,17 +437,28 @@ const Vehicle = (() => {
     });
 
     // Body roll
-    root.rotation.z = -G.lateralVel * 0.028;
+    root.rotation.z = -G.lateralVel * 0.014;
 
-    // Headlight emissive when in motion
-    const isNight = G.timeOfDay < 0.2 || G.timeOfDay > 0.8;
-    const hlInt = isNight ? 3.5 : 0;
-    headlightL.intensity = hlInt;
-    headlightR.intensity = hlInt;
-    headlightMat.emissiveIntensity = isNight ? 2.5 : 0.0;
+    // Dynamic Headlight intensity tied strictly to Time of Day (smooth fade)
+    const angle = (G.timeOfDay - 0.25) * Math.PI * 2;
+    const sunH = Math.sin(angle);
+    let lightFactor = 0;
 
+    // When sun is below horizon (sunH < 0.15), fade lights in to maximum
+    if (sunH < 0.15) {
+      lightFactor = Math.min(1.0, (0.15 - sunH) / 0.15);
+    }
+
+    // Emulate realistic automotive high beams (often 200,000+ candela)
+    // This is mathematically required to throw light 100m down the road due to PBR inverse-square dropoff!
+    const maxBeamIntensity = 2500000.0;
+    floodL.intensity = lightFactor * maxBeamIntensity;
+    floodR.intensity = lightFactor * maxBeamIntensity; 
+    headlightMat.emissiveIntensity = lightFactor * 25.0;
+    
     // Brake lights brighten when slowing
     const braking = keys.down;
+    const isNight = sunH < 0.15;
     taillightMat.emissiveIntensity = braking ? 1.8 : (isNight ? 0.6 : 0.2);
   }
 
