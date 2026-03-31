@@ -10,8 +10,9 @@ const Road = (() => {
 
   let pts = [];           // THREE.Vector3 control points
   let curve = null;
-  let roadMesh = null, lineMesh = null, barrierMesh = null;
+  let roadMesh = null, lineMesh = null, barrierMesh = null, streetlightMesh = null;
   let terrainL = null, terrainR = null;
+  let lightPositions = []; // Stores {x, y, z} for streetlights
 
   // Road generation drift state
   let driftAngle = 0, driftOmega = 0;
@@ -55,6 +56,8 @@ const Road = (() => {
     const verts = [], idx = [], uvs = [];
     const lVerts = [], lIdx = [];
     const bVerts = [], bIdx = []; // Barrier guardrails
+    const slVerts = [], slIdx = []; // Streetlight poles
+    lightPositions = [];
 
     for (let i = 0; i < samples.length - 1; i++) {
       const p0 = samples[i], p1 = samples[i + 1];
@@ -158,6 +161,63 @@ const Road = (() => {
         pushPost(false); // Left post
         pushPost(true);  // Right post
       }
+      
+      // Streetlights every 18 segments
+      if (i % 18 === 0 && i < samples.length - 2) {
+        const isRight = (i % 36 === 0);
+        const slOff = slVerts.length / 3;
+        const sign = isRight ? 1 : -1;
+        
+        // Base of the pole
+        const base = p0.clone().addScaledVector(right, sign * 5.2);
+        const top = base.clone(); top.y += 8.0; // 8m tall pole
+        const armEnd = top.clone().addScaledVector(right, sign * -2.5); // stick out over road
+        
+        // Push light position to array
+        lightPositions.push(armEnd.clone());
+
+        const w = 0.1; // pole width
+        // Create simple pole geometry using vertices
+        // We will just do a simple upright box and an arm box
+        const pushBox = (pStart, pEnd, boxW) => {
+           const dirBox = new THREE.Vector3().subVectors(pEnd, pStart).normalize();
+           const upBox = new THREE.Vector3(0,1,0);
+           let rightBox = new THREE.Vector3().crossVectors(dirBox, upBox);
+           if (rightBox.lengthSq() < 0.001) {
+              rightBox = new THREE.Vector3(1,0,0);
+           } else {
+              rightBox.normalize();
+           }
+           const frontBox = new THREE.Vector3().crossVectors(rightBox, dirBox).normalize();
+           
+           const off = slVerts.length / 3;
+           const addVert = (pt, rightSign, frontSign) => {
+              const v = pt.clone().addScaledVector(rightBox, rightSign*boxW).addScaledVector(frontBox, frontSign*boxW);
+              slVerts.push(v.x, v.y, v.z);
+           };
+           
+           addVert(pStart, -1, -1); // 0
+           addVert(pStart, 1, -1);  // 1
+           addVert(pStart, 1, 1);   // 2
+           addVert(pStart, -1, 1);  // 3
+           addVert(pEnd, -1, -1);   // 4
+           addVert(pEnd, 1, -1);    // 5
+           addVert(pEnd, 1, 1);     // 6
+           addVert(pEnd, -1, 1);    // 7
+           
+           const addQuad = (v1, v2, v3, v4) => {
+             slIdx.push(off+v1, off+v2, off+v3, off+v1, off+v3, off+v4);
+           };
+           addQuad(1, 0, 4, 5);
+           addQuad(2, 1, 5, 6);
+           addQuad(3, 2, 6, 7);
+           addQuad(0, 3, 7, 4);
+           addQuad(7, 6, 5, 4);
+        };
+        
+        pushBox(base, top, 0.15);
+        pushBox(top, armEnd, 0.08);
+      }
     }
 
     const geo = new THREE.BufferGeometry();
@@ -204,6 +264,21 @@ const Road = (() => {
       barrierMesh.castShadow = true;
       barrierMesh.receiveShadow = true;
       scene.add(barrierMesh);
+    }
+
+    if (slVerts.length && slIdx.length) {
+      if (streetlightMesh) { scene.remove(streetlightMesh); streetlightMesh.geometry.dispose(); }
+      const slg = new THREE.BufferGeometry();
+      slg.setAttribute('position', new THREE.Float32BufferAttribute(slVerts, 3));
+      slg.setIndex(slIdx);
+      slg.computeVertexNormals();
+      streetlightMesh = new THREE.Mesh(slg, new THREE.MeshStandardMaterial({
+        color: 0x222222,
+        roughness: 0.8,
+        metalness: 0.5
+      }));
+      streetlightMesh.castShadow = true;
+      scene.add(streetlightMesh);
     }
   }
 
@@ -269,14 +344,14 @@ const Road = (() => {
   }
 
   // Returns { pos, quat } for car placement at roadT + lateralOffset
-  function getCarTransform() {
+  function getCarTransform(offset = G.lateralOffset) {
     const t = Math.min(G.roadT, 0.9999);
     const roadPos = curve.getPoint(t);
     const tangent = curve.getTangent(t).normalize();
     const up3 = new THREE.Vector3(0, 1, 0);
     const right3 = new THREE.Vector3().crossVectors(tangent, up3).normalize();
 
-    const pos = roadPos.clone().addScaledVector(right3, G.lateralOffset);
+    const pos = roadPos.clone().addScaledVector(right3, offset);
     pos.y += 0.38; // sit car on road
 
     const forward = tangent.clone().negate(); // car faces -Z local
@@ -326,18 +401,22 @@ const Road = (() => {
     return curve.getPoint(t);
   }
 
-  return { init, advance, getCarTransform, applyBiome, getCurveLen, getCurvePoint };
+  function getLightPositions() {
+    return lightPositions;
+  }
+
+  return { init, advance, getCarTransform, applyBiome, getCurveLen, getCurvePoint, getLightPositions };
 })();
 
 // _getPointAt: returns { pos, quat } for traffic module
-Road._getPointAt = function (t) {
+Road._getPointAt = function (t, offset) {
   try {
     const _t = Math.max(0.001, Math.min(0.999, t));
     // Reuse getCarTransform logic but at arbitrary t
     // We temporarily override G.roadT
     const savedT = G.roadT;
     G.roadT = _t;
-    const result = Road.getCarTransform();
+    const result = Road.getCarTransform(offset !== undefined ? offset : G.lateralOffset);
     G.roadT = savedT;
     return result;
   } catch (e) { return null; }

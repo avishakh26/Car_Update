@@ -87,6 +87,7 @@ const G = {
   // Flags
   started: false,
   autodrive: false,
+  crashed: 0,
 
   // Input
   keys: { left: false, right: false, up: false, down: false },

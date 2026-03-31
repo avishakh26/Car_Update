@@ -286,3 +286,52 @@ function updateCamera(carPos, carQuat) {
   const lookAt = carPos.clone().add(new THREE.Vector3(0, 0.8, 0));
   camera.lookAt(lookAt);
 }
+
+// ============================================================
+// Street Lights — Dynamically pooled lights tracking the road
+// ============================================================
+const STR_LIGHT_COUNT = 8;
+const streetLights = [];
+for (let i = 0; i < STR_LIGHT_COUNT; i++) {
+  // Warm sodium/LED mix color
+  const pl = new THREE.PointLight(0xffeedd, 0, 90, 2.0);
+  pl.position.set(0, -1000, 0); // Hide initially
+  scene.add(pl);
+  streetLights.push(pl);
+}
+
+function updateStreetLights(carPos, timeOfDay) {
+  const angle = (timeOfDay - 0.25) * Math.PI * 2;
+  const sunH = Math.sin(angle);
+  const isNight = sunH < 0.15;
+  
+  if (!isNight) {
+    streetLights.forEach(l => l.intensity = 0);
+    return;
+  }
+  
+  // Fade in smoothly at dusk
+  let lightFactor = Math.min(1.0, (0.15 - sunH) / 0.15);
+  // High intensity due to PBR dropoff from 8m tall pole
+  const maxIntensity = 2500.0; 
+
+  let positions = [];
+  try { positions = Road.getLightPositions(); } catch(e) {}
+  if (!positions || positions.length === 0) return;
+
+  // Find the closest light positions to the car
+  const dists = positions.map(p => ({ p: p, d: p.distanceToSquared(carPos) }));
+  
+  // Sort by closest
+  dists.sort((a,b) => a.d - b.d);
+
+  for (let i = 0; i < STR_LIGHT_COUNT; i++) {
+    if (i < dists.length) {
+      streetLights[i].position.copy(dists[i].p);
+      streetLights[i].intensity = lightFactor * maxIntensity;
+    } else {
+      streetLights[i].intensity = 0;
+    }
+  }
+}
+

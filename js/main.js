@@ -52,6 +52,9 @@ function loop() {
   // Sky
   skyMesh.position.copy(pos);
 
+  // Street Lights
+  updateStreetLights(pos, G.timeOfDay);
+
   // Camera
   updateCamera(pos, quat);
 

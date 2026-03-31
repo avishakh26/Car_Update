@@ -363,12 +363,25 @@ const Vehicle = (() => {
   const wheels = wheelPositions.map(p => buildWheel(p[0], p[1], p[2]));
 
   // --- Physically Correct SpotLights ---
-  const floodL = new THREE.PointLight(0xffffff, 0, 800, 2.0);
-  floodL.position.set(-8.0, 15.0, -10.0);
+  const spotTargetL = new THREE.Object3D();
+  spotTargetL.position.set(-0.68, 0.0, 40.0);
+  root.add(spotTargetL);
+
+  const spotTargetR = new THREE.Object3D();
+  spotTargetR.position.set(0.68, 0.0, 40.0);
+  root.add(spotTargetR);
+
+  // Warm white LED headlights
+  const floodL = new THREE.SpotLight(0xfff0dd, 0, 200, Math.PI / 5, 0.5, 2.0);
+  floodL.position.set(-0.68, 0.64, 2.3);
+  floodL.target = spotTargetL;
+  floodL.castShadow = true;
   root.add(floodL);
 
-  const floodR = new THREE.PointLight(0xffffff, 0, 800, 2.0);
-  floodR.position.set(8.0, 15.0, -10.0);
+  const floodR = new THREE.SpotLight(0xfff0dd, 0, 200, Math.PI / 5, 0.5, 2.0);
+  floodR.position.set(0.68, 0.64, 2.3);
+  floodR.target = spotTargetR;
+  floodR.castShadow = true;
   root.add(floodR);
   
 
@@ -383,24 +396,36 @@ const Vehicle = (() => {
     const keys = G.keys;
     const maxSpd = G.maxSpeed;
 
-    // --- Speed ---
-    if (keys.up && !G.autodrive) {
-      G.carSpeed = Math.min(G.carSpeed + G.acceleration * dt, maxSpd);
-    } else if (keys.down) {
-      G.carSpeed = Math.max(G.carSpeed - G.braking * dt, 0);
+    // --- Crash State / Speed ---
+    if (G.crashed > 0) {
+      G.crashed -= dt;
+      G.carSpeed = Math.max(0, G.carSpeed - G.braking * 4 * dt); // Hard brake to 0
     } else {
-      G.carSpeed = Math.max(G.carSpeed - 8 * dt, G.autodrive ? G.maxSpeed * 0.75 : 0);
-    }
+      // Normal Input
+      if (keys.up && !G.autodrive) {
+        G.carSpeed = Math.min(G.carSpeed + G.acceleration * dt, maxSpd);
+      } else if (keys.down) {
+        G.carSpeed = Math.max(G.carSpeed - G.braking * dt, 0);
+      } else {
+        G.carSpeed = Math.max(G.carSpeed - 8 * dt, G.autodrive ? G.maxSpeed * 0.75 : 0);
+      }
 
-    if (G.autodrive) {
-      G.carSpeed = Math.min(G.carSpeed + G.acceleration * dt, G.maxSpeed * 0.75);
+      if (G.autodrive) {
+        G.carSpeed = Math.min(G.carSpeed + G.acceleration * dt, G.maxSpeed * 0.75);
+      }
     }
 
     // --- Steering ---
     let steerInput = 0;
     const steerMax = 3.5;
 
-    if (G.autodrive) {
+    // While crashed, you cannot steer. We just decelerate in current lane.
+    if (G.crashed > 0) {
+       G.lateralVel *= Math.pow(0.01, dt);
+       G.lateralOffset += G.lateralVel * dt;
+       G.targetOffset = G.lateralOffset;
+       steerInput = 0;
+    } else if (G.autodrive) {
       steerInput = -Math.sign(G.lateralOffset) * Math.min(Math.abs(G.lateralOffset) * 0.15, 1);
       G.targetOffset = G.lateralOffset; // Sync target so manual mode doesn't snap
 
@@ -410,8 +435,8 @@ const Vehicle = (() => {
     } else {
       const oldOffset = G.lateralOffset;
 
-      // Extremely fast but mathematical lerp for snappy lane shifting
-      G.lateralOffset += (G.targetOffset - G.lateralOffset) * 22.0 * dt;
+      // Smooth lerp for lane shifting (drastically reduced from 22.0)
+      G.lateralOffset += (G.targetOffset - G.lateralOffset) * 4.0 * dt;
 
       if (Math.abs(G.targetOffset - G.lateralOffset) < 0.01) {
         G.lateralOffset = G.targetOffset;
@@ -449,17 +474,21 @@ const Vehicle = (() => {
       lightFactor = Math.min(1.0, (0.15 - sunH) / 0.15);
     }
 
-    // Emulate realistic automotive high beams (often 200,000+ candela)
-    // This is mathematically required to throw light 100m down the road due to PBR inverse-square dropoff!
-    const maxBeamIntensity = 2500000.0;
+    // Emulate realistic automotive high beams
+    const maxBeamIntensity = 45000.0;
     floodL.intensity = lightFactor * maxBeamIntensity;
     floodR.intensity = lightFactor * maxBeamIntensity; 
     headlightMat.emissiveIntensity = lightFactor * 25.0;
     
-    // Brake lights brighten when slowing
+    // Brake lights brighten when slowing or blink as hazards when crashed
     const braking = keys.down;
     const isNight = sunH < 0.15;
-    taillightMat.emissiveIntensity = braking ? 1.8 : (isNight ? 0.6 : 0.2);
+    if (G.crashed > 0) {
+      const blink = (Date.now() % 600) < 300;
+      taillightMat.emissiveIntensity = blink ? 3.0 : 0.2;
+    } else {
+      taillightMat.emissiveIntensity = braking ? 1.8 : (isNight ? 0.6 : 0.2);
+    }
   }
 
   function setPosition(pos, quat) {

@@ -101,13 +101,19 @@ const Traffic = (() => {
 
       // Get world position from road curve
       try {
-        const pt = Road._getPointAt(npc.t);
+        const pt = Road._getPointAt(npc.t, npc.lateralOffset);
         if (!pt) return;
         const { pos, quat } = pt;
 
         pos.y += 0.38; // sit on road
         npc.group.position.copy(pos);
         npc.group.quaternion.copy(quat);
+
+        // --- Collision Detection ---
+        if (G.crashed <= 0 && pos.distanceToSquared(Vehicle.getRoot().position) < 12.0) { // approx 3.4m radius
+           G.crashed = 3.0; // 3 seconds off
+           G.carSpeed = Math.max(0, G.carSpeed - 30); // Hard jolt speed reduction
+        }
       } catch(e) {}
     });
   }
