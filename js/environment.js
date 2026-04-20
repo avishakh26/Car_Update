@@ -3,10 +3,10 @@
 // ============================================================
 
 const Environment = (() => {
-  const TREE_COUNT = 1500;
-  const GRASS_COUNT = 3000;
-  const CLOUD_COUNT = 22;
-  const MTN_COUNT = 18;
+  const TREE_COUNT = 800;
+  const GRASS_COUNT = 1500;
+  const CLOUD_COUNT = 12;
+  const MTN_COUNT = 12;
 
   let cloudMeshes = [];
   let mountainGroup = null;

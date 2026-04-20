@@ -5,13 +5,13 @@
 // --- Renderer & Scene ---
 const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById('canvas'),
-  antialias: true,
+  antialias: false,
   powerPreference: 'high-performance',
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.5));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.BasicShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.15;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -36,13 +36,13 @@ scene.add(ambientLight);
 // Sun (directional with high-res shadow)
 const sunLight = new THREE.DirectionalLight(0xfff8f0, 2.2);
 sunLight.castShadow = true;
-sunLight.shadow.mapSize.set(4096, 4096);
+sunLight.shadow.mapSize.set(2048, 2048);
 sunLight.shadow.camera.near = 1;
 sunLight.shadow.camera.far = 600;
-sunLight.shadow.camera.left   = -200;
-sunLight.shadow.camera.right  =  200;
-sunLight.shadow.camera.top    =  200;
-sunLight.shadow.camera.bottom = -200;
+sunLight.shadow.camera.left   = -150;
+sunLight.shadow.camera.right  =  150;
+sunLight.shadow.camera.top    =  150;
+sunLight.shadow.camera.bottom = -150;
 sunLight.shadow.bias = -0.0002;
 sunLight.shadow.normalBias = 0.04;
 scene.add(sunLight);
@@ -138,7 +138,7 @@ const sunDiscMesh = new THREE.Mesh(
 scene.add(sunDiscMesh);
 
 // --- Stars ---
-const starCount = 2000;
+const starCount = 800;
 const starPos = new Float32Array(starCount * 3);
 for (let i = 0; i < starCount; i++) {
   const phi = Math.random() * Math.PI;

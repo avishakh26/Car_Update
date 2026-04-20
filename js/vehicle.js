@@ -361,6 +361,18 @@ const Vehicle = (() => {
   ];
 
   const wheels = wheelPositions.map(p => buildWheel(p[0], p[1], p[2]));
+  // Wrap front wheels in pivot groups for steering rotation
+  const frontPivotL = new THREE.Group();
+  frontPivotL.position.set(-1.04, 0.40, 1.42);
+  root.add(frontPivotL);
+  const frontPivotR = new THREE.Group();
+  frontPivotR.position.set(1.04, 0.40, 1.42);
+  root.add(frontPivotR);
+  // Re-parent FL and FR into their pivot groups (removes from root automatically)
+  wheels[0].position.set(0, 0, 0);
+  frontPivotL.add(wheels[0]);
+  wheels[1].position.set(0, 0, 0);
+  frontPivotR.add(wheels[1]);
 
   // --- Physically Correct SpotLights ---
   const spotTargetL = new THREE.Object3D();
@@ -455,11 +467,16 @@ const Vehicle = (() => {
     steerAngle += (steerInput * 0.35 - steerAngle) * 0.40;
 
     // --- Wheel spin ---
+    // Wheels are cylinders rotated 90° around Z to face outward,
+    // so forward rolling motion is a rotation around Z of the wheelGroup.
     spinAngle += (G.carSpeed / 0.40) * dt;
-    wheels.forEach((wg, i) => {
-      // Spin the whole group on local X axis (mounted along Z)
-      wg.rotation.x = spinAngle;
+    wheels.forEach((wg) => {
+      wg.rotation.z = spinAngle;
     });
+
+    // --- Steering: rotate front wheel pivot groups around Y ---
+    frontPivotL.rotation.y = steerAngle;
+    frontPivotR.rotation.y = steerAngle;
 
     // Body roll
     root.rotation.z = -G.lateralVel * 0.014;

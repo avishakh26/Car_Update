@@ -261,8 +261,8 @@ const Road = (() => {
         roughness: 0.95,
         metalness: 0.0
       }));
-      barrierMesh.castShadow = true;
-      barrierMesh.receiveShadow = true;
+      barrierMesh.castShadow = false;
+      barrierMesh.receiveShadow = false;
       scene.add(barrierMesh);
     }
 
@@ -277,7 +277,7 @@ const Road = (() => {
         roughness: 0.8,
         metalness: 0.5
       }));
-      streetlightMesh.castShadow = true;
+      streetlightMesh.castShadow = false;
       scene.add(streetlightMesh);
     }
   }
@@ -318,7 +318,6 @@ const Road = (() => {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
     geo.setIndex(idxArr);
-    geo.computeVertexNormals();
     const b = BIOMES[G.biome];
     // Terrain: matte ground material
     const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
@@ -326,7 +325,7 @@ const Road = (() => {
       roughness: 1.0,
       metalness: 0.0,
     }));
-    mesh.receiveShadow = true;
+    mesh.receiveShadow = false;
     return mesh;
   }
 

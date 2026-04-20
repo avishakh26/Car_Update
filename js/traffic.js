@@ -95,8 +95,8 @@ const Traffic = (() => {
 
       // If NPC has gone past the road rebuild zone, reset it ahead of player
       if (npc.t > 0.42 || npc.t < G.roadT) {
-        npc.t = G.roadT + 0.04 + Math.random() * 0.20;
-        if (npc.t > 0.42) npc.t = G.roadT + 0.04;
+        npc.t = G.roadT + 0.12 + Math.random() * 0.20;
+        if (npc.t > 0.42) npc.t = G.roadT + 0.12;
       }
 
       // Get world position from road curve
@@ -110,9 +110,9 @@ const Traffic = (() => {
         npc.group.quaternion.copy(quat);
 
         // --- Collision Detection ---
-        if (G.crashed <= 0 && pos.distanceToSquared(Vehicle.getRoot().position) < 12.0) { // approx 3.4m radius
+        if (G.crashed <= 0 && pos.distanceToSquared(Vehicle.getRoot().position) < 14.5) { // increased from 12.0
            G.crashed = 3.0; // 3 seconds off
-           G.carSpeed = Math.max(0, G.carSpeed - 30); // Hard jolt speed reduction
+           G.carSpeed = Math.max(0, G.carSpeed - 20); // reduced penalty from 30 to 20 for faster recovery
         }
       } catch(e) {}
     });
