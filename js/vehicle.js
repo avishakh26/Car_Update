@@ -7,9 +7,9 @@ const Vehicle = (() => {
   scene.add(root);
 
   // --- PBR Materials ---
-  // Car paint: deep navy with slight metallic sheen
+  // Car paint: yellow default
   const bodyMat = new THREE.MeshStandardMaterial({
-    color: 0x1a3a5c,
+    color: 0xf0a000,
     roughness: 0.18,
     metalness: 0.85,
     envMapIntensity: 1.0,
@@ -464,11 +464,11 @@ const Vehicle = (() => {
     steerAngle += (steerInput * 0.35 - steerAngle) * 0.40;
 
     // --- Wheel spin ---
-    // Wheels are cylinders rotated 90° around Z to face outward,
-    // so forward rolling motion is a rotation around Z of the wheelGroup.
-    spinAngle += (G.carSpeed / 0.40) * dt;
+    // The wheels are aligned so the axle runs along the local X axis.
+    // Rolling forward requires rotating around the X axis.
+    spinAngle -= (G.carSpeed / 0.40) * dt;
     wheels.forEach((wg) => {
-      wg.rotation.z = spinAngle;
+      wg.rotation.x = spinAngle;
     });
 
     // --- Steering: rotate front wheel pivot groups around Y ---
