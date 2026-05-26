@@ -295,6 +295,14 @@ const Environment = (() => {
     const geo = new THREE.PlaneGeometry(0.35, 1.1);
     geo.translate(0, 0.55, 0);
 
+    // Make grass normals point straight UP (0, 1, 0) so they match terrain lighting perfectly
+    const norms = geo.attributes.normal.array;
+    for (let i = 0; i < norms.length; i += 3) {
+      norms[i] = 0;
+      norms[i + 1] = 1;
+      norms[i + 2] = 0;
+    }
+
     const c = new THREE.Color(b.groundColor);
     // Make grass more saturated and slightly brighter than ground
     c.r = Math.min(1, c.r * 0.7 + 0.04);

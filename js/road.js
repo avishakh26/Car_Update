@@ -318,6 +318,7 @@ const Road = (() => {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
     geo.setIndex(idxArr);
+    geo.computeVertexNormals(); // Compute smooth normals for lighting
     const b = BIOMES[G.biome];
     // Terrain: matte ground material
     const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
