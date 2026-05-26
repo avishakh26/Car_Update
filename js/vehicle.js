@@ -448,12 +448,17 @@ const Vehicle = (() => {
       G.lateralVel *= Math.pow(G.steerFriction, dt * 60);
       G.lateralOffset += G.lateralVel * dt;
     } else {
+      // Smooth continuous steering
+      const steerSpeed = 6.0; // Units per second
+      if (keys.left) G.targetOffset = Math.max(-steerMax, G.targetOffset - steerSpeed * dt);
+      if (keys.right) G.targetOffset = Math.min(steerMax, G.targetOffset + steerSpeed * dt);
+
       const oldOffset = G.lateralOffset;
 
-      // Smooth lerp for lane shifting (drastically reduced from 22.0)
-      G.lateralOffset += (G.targetOffset - G.lateralOffset) * 4.0 * dt;
+      // Smooth lerp for responsive but non-snappy feel
+      G.lateralOffset += (G.targetOffset - G.lateralOffset) * 8.0 * dt;
 
-      if (Math.abs(G.targetOffset - G.lateralOffset) < 0.01) {
+      if (Math.abs(G.targetOffset - G.lateralOffset) < 0.005) {
         G.lateralOffset = G.targetOffset;
       }
 

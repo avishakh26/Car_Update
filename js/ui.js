@@ -19,11 +19,9 @@ const UI = (() => {
         }
       }
       if (k === 'ArrowLeft'  || k === 'a' || k === 'A') {
-          if (!G.keys.left && !G.autodrive) G.targetOffset = Math.max(-3.5, G.targetOffset - 3.5);
           G.keys.left  = true;
       }
       if (k === 'ArrowRight' || k === 'd' || k === 'D') {
-          if (!G.keys.right && !G.autodrive) G.targetOffset = Math.min(3.5, G.targetOffset + 3.5);
           G.keys.right = true;
       }
       if (k === 'ArrowUp'   || k === 'w' || k === 'W') G.keys.up    = true;
@@ -57,11 +55,9 @@ const UI = (() => {
     const t = e.touches[0];
     touchStartX = t.clientX;
     if (t.clientX < window.innerWidth * 0.4) {
-      if (!G.autodrive && !G.keys.left) G.targetOffset = Math.max(-3.5, G.targetOffset - 3.5);
       G.keys.left = true;
     }
     else if (t.clientX > window.innerWidth * 0.6) {
-      if (!G.autodrive && !G.keys.right) G.targetOffset = Math.min(3.5, G.targetOffset + 3.5);
       G.keys.right = true;
     }
     else G.keys.up = true;
