@@ -4,7 +4,13 @@
 
 const Vehicle = (() => {
   const root = new THREE.Group();
+  const meshRoot = new THREE.Group();
+  meshRoot.rotation.y = Math.PI; // Face forward (-Z)
+  root.add(meshRoot);
   scene.add(root);
+
+  // Intercept root.add so all car parts go into meshRoot
+  root.add = (...args) => meshRoot.add(...args);
 
   // --- PBR Materials ---
   // Car paint: yellow default
@@ -476,7 +482,7 @@ const Vehicle = (() => {
     frontPivotR.rotation.y = steerAngle;
 
     // Body roll
-    root.rotation.z = -G.lateralVel * 0.014;
+    meshRoot.rotation.z = G.lateralVel * 0.014; // Applied to meshRoot so setPosition doesn't overwrite it
 
     // Dynamic Headlight intensity tied strictly to Time of Day (smooth fade)
     const angle = (G.timeOfDay - 0.25) * Math.PI * 2;
