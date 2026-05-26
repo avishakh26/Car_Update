@@ -10,6 +10,14 @@ const UI = (() => {
     document.addEventListener('keydown', e => {
       if (!G.started) return;
       const k = e.key;
+      // Disable autodrive on any explicit driving input
+      if (['ArrowUp', 'w', 'W', 'ArrowDown', 's', 'S', 'ArrowLeft', 'a', 'A', 'ArrowRight', 'd', 'D'].includes(k)) {
+        if (G.autodrive) {
+          G.autodrive = false;
+          const btn = document.getElementById('btn-autodrive');
+          if (btn) btn.classList.remove('active');
+        }
+      }
       if (k === 'ArrowLeft'  || k === 'a' || k === 'A') {
           if (!G.keys.left && !G.autodrive) G.targetOffset = Math.max(-3.5, G.targetOffset - 3.5);
           G.keys.left  = true;
@@ -37,6 +45,15 @@ const UI = (() => {
 
   let touchStartX = 0;
   function handleTouch(e) {
+    if (!G.started) return;
+    
+    // Disable autodrive on any manual touch input
+    if (G.autodrive) {
+      G.autodrive = false;
+      const btn = document.getElementById('btn-autodrive');
+      if (btn) btn.classList.remove('active');
+    }
+
     const t = e.touches[0];
     touchStartX = t.clientX;
     if (t.clientX < window.innerWidth * 0.4) {
@@ -78,6 +95,7 @@ function startDrive() {
   setTimeout(() => { document.getElementById('splash').style.display = 'none'; }, 950);
   document.getElementById('hud').style.display = 'block';
   G.started = true;
+  setAutodrive(true); // Auto-start driving so it doesn't just stop
   G.carSpeed = G.maxSpeed * 0.5; // Start at half speed
   Audio.startPlayback(); // Auto-play default music on journey start
 }

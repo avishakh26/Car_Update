@@ -71,9 +71,9 @@ const G = {
 
   // Car physics
   carSpeed: 0,         // current speed (units/sec)
-  maxSpeed: 60,        // max speed units/sec (~120 km/h display)
-  acceleration: 18,
-  braking: 30,
+  maxSpeed: 80,        // max speed units/sec (~160 km/h display) - More power!
+  acceleration: 35,    // Increased acceleration to overtake easily
+  braking: 35,
   lateralOffset: 0,   // offset from road center
   targetOffset: 0,
   lateralVel: 0,

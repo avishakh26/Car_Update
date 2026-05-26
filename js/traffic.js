@@ -109,14 +109,21 @@ const Traffic = (() => {
         npc.group.position.copy(pos);
         npc.group.quaternion.copy(quat);
 
-        // --- Collision Detection ---
-        if (G.crashed <= 0 && pos.distanceToSquared(Vehicle.getRoot().position) < 14.5) { // increased from 12.0
-           G.crashed = 3.0; // 3 seconds off
-           G.carSpeed = Math.max(0, G.carSpeed - 20); // reduced penalty from 30 to 20 for faster recovery
-        }
-      } catch(e) {}
-    });
-  }
+          // Dodge logic for autodrive - Overtake slow cars!
+          if (G.autodrive && G.crashed <= 0) {
+            // Check if NPC is ahead of player and in similar lane
+            const distAhead = npc.t - G.roadT;
+            if (distAhead > 0 && distAhead < 0.05) { // Roughly visible and close
+              if (Math.abs(G.lateralOffset - npc.lateralOffset) < 2.0) { // Same lane
+                // Shift target offset to an open lane
+                G.targetOffset = npc.lateralOffset > 0 ? -3.5 : 3.5;
+                // Give car power to overtake
+                G.carSpeed = Math.min(G.carSpeed + 10, G.maxSpeed * 1.2); 
+              }
+            }
+          }
 
-  return { init, update };
-})();
+          // --- Collision Detection ---
+          if (G.crashed <= 0 && pos.distanceToSquared(Vehicle.getRoot().position) < 14.5) { // increased from 12.0
+             G.crashed = 0.8; // Reduced crash stun time so you don't get completely stuck
+             G.carSpeed = Math.max(0, G.carSpeed - 15); // Less penalty for smoother overtaking

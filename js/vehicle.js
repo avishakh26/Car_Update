@@ -411,11 +411,13 @@ const Vehicle = (() => {
     // --- Crash State / Speed ---
     if (G.crashed > 0) {
       G.crashed -= dt;
-      G.carSpeed = Math.max(0, G.carSpeed - G.braking * 4 * dt); // Hard brake to 0
+      // Recovering from crash: slight slow down but keep moving
+      G.carSpeed = Math.max(10, G.carSpeed - G.braking * 0.5 * dt); 
     } else {
       // Normal Input
       if (keys.up && !G.autodrive) {
-        G.carSpeed = Math.min(G.carSpeed + G.acceleration * dt, maxSpd);
+        // Boost up to 1.3x max speed to overtake!
+        G.carSpeed = Math.min(G.carSpeed + G.acceleration * dt, maxSpd * 1.3);
       } else if (keys.down) {
         G.carSpeed = Math.max(G.carSpeed - G.braking * dt, 0);
       } else {
@@ -431,13 +433,8 @@ const Vehicle = (() => {
     let steerInput = 0;
     const steerMax = 3.5;
 
-    // While crashed, you cannot steer. We just decelerate in current lane.
-    if (G.crashed > 0) {
-       G.lateralVel *= Math.pow(0.01, dt);
-       G.lateralOffset += G.lateralVel * dt;
-       G.targetOffset = G.lateralOffset;
-       steerInput = 0;
-    } else if (G.autodrive) {
+    // Even while recovering from a bump, you can steer slightly to evade.
+    if (G.autodrive && G.crashed <= 0) {
       steerInput = -Math.sign(G.lateralOffset) * Math.min(Math.abs(G.lateralOffset) * 0.15, 1);
       G.targetOffset = G.lateralOffset; // Sync target so manual mode doesn't snap
 
