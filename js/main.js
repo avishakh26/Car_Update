@@ -31,37 +31,41 @@ function loop() {
     return;
   }
 
-  // Advance road
-  Road.advance(G.delta);
-  Road._curveLen = Road.getCurveLen(); // keep traffic in sync
+  try {
+    // Advance road
+    Road.advance(G.delta);
+    Road._curveLen = Road.getCurveLen(); // keep traffic in sync
 
-  // Car transform
-  const { pos, quat } = Road.getCarTransform();
+    // Car transform
+    const { pos, quat } = Road.getCarTransform();
 
-  // Vehicle physics
-  Vehicle.update(G.delta);
-  Vehicle.setPosition(pos, quat);
+    // Vehicle physics
+    Vehicle.update(G.delta);
+    Vehicle.setPosition(pos, quat);
 
-  // Environment
-  Environment.update(G.delta, pos);
-  Weather.update(G.delta, pos);
+    // Environment
+    Environment.update(G.delta, pos);
+    Weather.update(G.delta, pos);
 
-  // NPC traffic
-  Traffic.update(G.delta);
+    // NPC traffic
+    Traffic.update(G.delta);
 
-  // Sky
-  skyMesh.position.copy(pos);
+    // Sky
+    skyMesh.position.copy(pos);
 
-  // Street Lights
-  updateStreetLights(pos, G.timeOfDay);
+    // Street Lights
+    updateStreetLights(pos, G.timeOfDay);
 
-  // Camera
-  updateCamera(pos, quat);
+    // Camera
+    updateCamera(pos, quat);
 
-  // HUD
-  UI.update();
+    // HUD
+    UI.update();
 
-  renderer.render(scene, camera);
+    renderer.render(scene, camera);
+  } catch (err) {
+    console.error("LOOP ERROR:", err);
+  }
 }
 
 // Kick off

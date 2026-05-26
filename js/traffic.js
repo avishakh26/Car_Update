@@ -127,3 +127,10 @@ const Traffic = (() => {
           if (G.crashed <= 0 && pos.distanceToSquared(Vehicle.getRoot().position) < 14.5) { // increased from 12.0
              G.crashed = 0.8; // Reduced crash stun time so you don't get completely stuck
              G.carSpeed = Math.max(0, G.carSpeed - 15); // Less penalty for smoother overtaking
+          }
+      } catch(e) { }
+    });
+  }
+
+  return { init, update };
+})();
