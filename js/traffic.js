@@ -9,6 +9,33 @@ const Traffic = (() => {
   // Each NPC: { group, bodyMesh, t, speed, lateralOffset }
   let npcs = [];
 
+  // Relaxing Bubbles
+  const sparks = [];
+  const sparkGeo = new THREE.SphereGeometry(0.8, 16, 16); // Smooth bubbles
+  const sparkMat = new THREE.MeshBasicMaterial({ color: 0xaaffff, transparent: true, opacity: 0.6 }); 
+
+  function spawnSparks(pos) {
+    for (let i = 0; i < 15; i++) {
+      const mesh = new THREE.Mesh(sparkGeo, sparkMat);
+      mesh.position.copy(pos);
+      mesh.position.y += 0.5 + Math.random();
+      mesh.position.x += (Math.random() - 0.5) * 4.0;
+      mesh.position.z += (Math.random() - 0.5) * 4.0;
+      
+      const baseScale = 0.5 + Math.random() * 1.5;
+      mesh.scale.setScalar(baseScale);
+      
+      scene.add(mesh);
+      sparks.push({
+        mesh,
+        baseScale,
+        vel: new THREE.Vector3((Math.random() - 0.5) * 2, Math.random() * 2 + 1, (Math.random() - 0.5) * 2),
+        life: 2.0 + Math.random(), // longer lifetime
+        maxLife: 3.0
+      });
+    }
+  }
+
   // Build a simple low-poly car mesh (box body + extruded cab + wheels)
   function _buildCarMesh(color) {
     const group = new THREE.Group();
@@ -87,6 +114,26 @@ const Traffic = (() => {
   function update(dt) {
     if (!G.started) return;
 
+    // Update relaxing bubbles
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const p = sparks[i];
+      p.life -= dt;
+      if (p.life <= 0) {
+        scene.remove(p.mesh);
+        sparks.splice(i, 1);
+        continue;
+      }
+      p.vel.y += dt * 1.5; // gentle upward drift
+      p.mesh.position.addScaledVector(p.vel, dt);
+      
+      // Gentle wobble side to side
+      p.mesh.position.x += Math.sin(p.life * 4) * dt * 0.8;
+      p.mesh.position.z += Math.cos(p.life * 4) * dt * 0.8;
+      
+      // Fade/scale down gracefully
+      p.mesh.scale.setScalar(p.baseScale * Math.max(0, p.life / p.maxLife));
+    }
+
     const len = Road._curveLength || 3000;
     npcs.forEach(npc => {
       // Advance NPC along road
@@ -127,6 +174,10 @@ const Traffic = (() => {
           if (G.crashed <= 0 && pos.distanceToSquared(Vehicle.getRoot().position) < 14.5) { // increased from 12.0
              G.crashed = 0.8; // Reduced crash stun time so you don't get completely stuck
              G.carSpeed = Math.max(0, G.carSpeed - 15); // Less penalty for smoother overtaking
+             
+             // Spawn sparks at crash point (midpoint between player and NPC)
+             const crashPos = new THREE.Vector3().copy(pos).lerp(Vehicle.getRoot().position, 0.5);
+             spawnSparks(crashPos);
           }
       } catch(e) { }
     });

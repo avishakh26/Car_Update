@@ -13,6 +13,10 @@ const puppeteer = require('puppeteer');
             console.error('[PAGEERROR]', err.message);
         });
 
+        page.on('requestfailed', request => {
+            console.error('[REQUEST FAILED]', request.url(), request.failure().errorText);
+        });
+
         await page.goto('file:///d:/car/index.html', { waitUntil: 'load' });
         
         // Wait a bit
