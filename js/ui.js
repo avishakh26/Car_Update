@@ -24,6 +24,7 @@ const UI = (() => {
       }
       if (k === 'ArrowUp'   || k === 'w' || k === 'W') G.keys.up    = true;
       if (k === 'ArrowDown'  || k === 's' || k === 'S') G.keys.down  = true;
+      if (k === 'v' || k === 'V') toggleCameraMode();
       if (k === 'Escape') closeSettings();
     });
     document.addEventListener('keyup', e => {
@@ -130,6 +131,12 @@ function setAutodrive(v) {
 
 function setSpeedLimit(v) {
   G.maxSpeed = parseFloat(v) / 3.0;
+}
+
+function toggleCameraMode() {
+  G.cameraMode = (G.cameraMode === 'TPP') ? 'FPP' : 'TPP';
+  const btn = document.getElementById('cameraBtn');
+  if (btn) btn.innerText = 'Cam: ' + G.cameraMode;
 }
 
 // Spawn twinkle stars on splash

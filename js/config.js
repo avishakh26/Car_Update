@@ -95,4 +95,5 @@ const G = {
   // Timing
   delta: 0,
   clock: null,
+  cameraMode: 'TPP',
 };

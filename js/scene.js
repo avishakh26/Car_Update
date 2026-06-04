@@ -270,21 +270,35 @@ let camPos = new THREE.Vector3(0, 5, 12);
 let _camVel = new THREE.Vector3();
 
 function updateCamera(carPos, carQuat) {
-  // Camera offset: slightly higher, further back for cinematic feel
-  const offset = new THREE.Vector3(0, 3.2, 9.5);
+  let offset;
+  if (G.cameraMode === 'FPP') {
+    // Driver seat: slightly left, slightly lower so roof feels higher, forward in cabin
+    offset = new THREE.Vector3(-0.4, 1.15, 0.1); 
+  } else {
+    // Camera offset: slightly higher, further back for cinematic feel
+    offset = new THREE.Vector3(0, 3.2, 9.5);
+  }
   offset.applyQuaternion(carQuat);
   camTarget.copy(carPos).add(offset);
 
   // Spring damping (critically damped, no oscillation)
-  const k = 6.0; // spring stiffness
-  const c = 0.08; // damping factor
-  camPos.lerp(camTarget, c);
+  if (G.cameraMode === 'FPP') {
+    camPos.copy(camTarget); // Instant snap, no lag inside cabin
+  } else {
+    camPos.lerp(camTarget, 0.08); // Smooth cinematic follow for TPP
+  }
 
   camera.position.copy(camPos);
 
-  // Look slightly above car center for better composition
-  const lookAt = carPos.clone().add(new THREE.Vector3(0, 0.8, 0));
-  camera.lookAt(lookAt);
+  if (G.cameraMode === 'FPP') {
+    // Look straight ahead from driver's perspective
+    const lookAt = carPos.clone().add(new THREE.Vector3(-0.4, 1.25, -20).applyQuaternion(carQuat));
+    camera.lookAt(lookAt);
+  } else {
+    // Look slightly above car center for better composition
+    const lookAt = carPos.clone().add(new THREE.Vector3(0, 0.8, 0));
+    camera.lookAt(lookAt);
+  }
 }
 
 // ============================================================

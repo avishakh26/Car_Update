@@ -137,6 +137,81 @@ const Vehicle = (() => {
   rear.rotation.x = -0.38;
   root.add(rear);
 
+  let steeringWheelMesh;
+
+  // --- INTERIOR (Dashboard & Steering Wheel) ---
+  const interiorGroup = new THREE.Group();
+  
+  // Dashboard panel
+  const dashMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9, metalness: 0.1 });
+  const dashboard = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.3, 0.4), dashMat);
+  dashboard.position.set(0, 0.9, 0.7); 
+  dashboard.rotation.x = -0.15;
+  interiorGroup.add(dashboard);
+
+  // Instrument cluster bump
+  const cluster = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.15, 0.2), dashMat);
+  cluster.position.set(0.4, 1.05, 0.65);
+  cluster.rotation.x = -0.2;
+  interiorGroup.add(cluster);
+
+  // Speedometer dial (simple cylinder)
+  const dialMat = new THREE.MeshStandardMaterial({ color: 0x113355, roughness: 0.5, metalness: 0.8 });
+  const dial1 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.02, 16), dialMat);
+  dial1.position.set(0.5, 1.05, 0.55);
+  dial1.rotation.x = Math.PI / 2 - 0.2;
+  interiorGroup.add(dial1);
+
+  const dial2 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.02, 16), dialMat);
+  dial2.position.set(0.3, 1.05, 0.55);
+  dial2.rotation.x = Math.PI / 2 - 0.2;
+  interiorGroup.add(dial2);
+
+  // Steering wheel (Torus)
+  const steerMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8, metalness: 0.2 });
+  steeringWheelMesh = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.025, 16, 32), steerMat);
+  steeringWheelMesh.position.set(0.4, 1.02, 0.55);
+  steeringWheelMesh.rotation.x = -0.2;
+  interiorGroup.add(steeringWheelMesh);
+
+  // Steering column
+  const steeringColumn = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.3), steerMat);
+  steeringColumn.position.set(0.4, 0.95, 0.65);
+  steeringColumn.rotation.x = Math.PI / 2 - 0.2;
+  interiorGroup.add(steeringColumn);
+
+  // Center Console Screen (Infotainment)
+  const screenMat = new THREE.MeshBasicMaterial({ color: 0x1a88ff }); // glowing blue
+  const screen = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.18, 0.05), screenMat);
+  screen.position.set(-0.1, 0.98, 0.65); // center-right of driver
+  screen.rotation.x = -0.15;
+  screen.rotation.y = -0.15; // slightly angled toward driver
+  interiorGroup.add(screen);
+
+  // Rear view mirror
+  const mirrorMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.2, metalness: 0.9 });
+  const mirror = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.08, 0.04), mirrorMat);
+  mirror.position.set(0, 1.45, 0.9); // raised slightly
+  mirror.rotation.x = 0.2;
+  interiorGroup.add(mirror);
+
+  // Driver Hands / Arms (Leather gloves look)
+  const gloveMat = new THREE.MeshStandardMaterial({ color: 0x3d2b1f, roughness: 0.8, metalness: 0.1 }); // dark brown leather
+  
+  // Left arm
+  const leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.05, 0.45), gloveMat);
+  leftArm.position.set(0.12, -0.15, -0.25); 
+  leftArm.rotation.set(-1.0, 0, -0.4);
+  steeringWheelMesh.add(leftArm);
+  
+  // Right arm
+  const rightArm = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.05, 0.45), gloveMat);
+  rightArm.position.set(-0.12, -0.15, -0.25);
+  rightArm.rotation.set(-1.0, 0, 0.4);
+  steeringWheelMesh.add(rightArm);
+
+  root.add(interiorGroup);
+
   // Side windows (L and R)
   [-0.855, 0.855].forEach(x => {
     // Front side window
@@ -485,6 +560,11 @@ const Vehicle = (() => {
     // --- Steering: rotate front wheel pivot groups around Y ---
     frontPivotL.rotation.y = steerAngle;
     frontPivotR.rotation.y = steerAngle;
+
+    // Rotate steering wheel
+    if (steeringWheelMesh) {
+      steeringWheelMesh.rotation.z = -steerAngle * 4.0; 
+    }
 
     // Body roll
     meshRoot.rotation.z = G.lateralVel * 0.014; // Applied to meshRoot so setPosition doesn't overwrite it
