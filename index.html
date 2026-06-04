@@ -729,6 +729,48 @@
     .car-color-chip.chosen {
       border-color: rgba(255, 255, 255, 0.9);
     }
+
+    /* ============================================================
+       MOBILE CONTROLS
+    ============================================================ */
+    #mobile-controls {
+      display: none;
+      position: absolute;
+      bottom: 5.5rem;
+      left: 0; right: 0;
+      pointer-events: none;
+    }
+    
+    @media (max-width: 800px) {
+      #mobile-controls {
+        display: block;
+      }
+    }
+
+    .m-btn {
+      position: absolute;
+      width: 60px; height: 60px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 50%;
+      color: rgba(255,255,255,0.6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem;
+      pointer-events: all;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+      backdrop-filter: blur(4px);
+    }
+    .m-btn:active {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+    }
+    .m-left { left: 1rem; bottom: 0; }
+    .m-right { left: 5.5rem; bottom: 0; }
+    .m-brake { right: 5.5rem; bottom: 0; font-size: 0.8rem; width: 60px; height: 60px; }
+    .m-gas { right: 1rem; bottom: 0; font-size: 0.8rem; width: 60px; height: 60px; }
+
   </style>
 </head>
 
@@ -782,9 +824,7 @@
 
       <!-- Left nav -->
       <div class="hud-nav-left">
-        <button class="hud-nav-item active" id="nav-world" onclick="openWorldPanel()">World</button>
-        <button class="hud-nav-item" id="nav-style" onclick="openStylePanel()">Style</button>
-        <button class="hud-nav-item" id="nav-vehicle" onclick="openVehiclePanel()">Vehicle</button>
+        <!-- Removed per user request -->
       </div>
 
       <!-- AUTODRIVE center -->
@@ -837,6 +877,14 @@
 
     </div><!-- /.hud-bottom-bar -->
 
+    <!-- Mobile Controls -->
+    <div id="mobile-controls">
+      <div class="m-btn m-left" id="mLeft">◀</div>
+      <div class="m-btn m-right" id="mRight">▶</div>
+      <div class="m-btn m-brake" id="mBrake">Brk</div>
+      <div class="m-btn m-gas" id="mGas">Gas</div>
+    </div>
+
   </div><!-- /#hud -->
 
   <!-- ============================================================
@@ -865,7 +913,7 @@
       <div class="s-row">
         <span class="s-label">Rain</span>
         <label class="tog">
-          <input type="checkbox" id="rainTog" onchange="setWeather(this.checked?'rain':'clear')">
+          <input type="checkbox" id="rainTog" onchange="if(this.checked) document.getElementById('snowTog').checked=false; setWeather(this.checked?'rain':'clear')">
           <span class="tog-track"></span>
         </label>
       </div>
@@ -873,7 +921,7 @@
         <span class="s-label">Snow</span>
         <label class="tog">
           <input type="checkbox" id="snowTog"
-            onchange="document.getElementById('rainTog').checked=false; setWeather(this.checked?'snow':'clear')">
+            onchange="if(this.checked) document.getElementById('rainTog').checked=false; setWeather(this.checked?'snow':'clear')">
           <span class="tog-track"></span>
         </label>
       </div>
@@ -901,17 +949,17 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 
   <!-- Game modules — ORDER MATTERS -->
-  <script src="js/config.js?v=2"></script>
-  <script src="js/noise.js?v=2"></script>
-  <script src="js/scene.js?v=2"></script>
-  <script src="js/road.js?v=2"></script>
-  <script src="js/vehicle.js?v=2"></script>
-  <script src="js/traffic.js?v=2"></script>
-  <script src="js/environment.js?v=2"></script>
-  <script src="js/weather.js?v=2"></script>
-  <script src="js/audio.js?v=2"></script>
-  <script src="js/ui.js?v=2"></script>
-  <script src="js/main.js?v=2"></script>
+  <script src="js/config.js?v=5"></script>
+  <script src="js/noise.js?v=5"></script>
+  <script src="js/scene.js?v=5"></script>
+  <script src="js/road.js?v=5"></script>
+  <script src="js/vehicle.js?v=5"></script>
+  <script src="js/traffic.js?v=5"></script>
+  <script src="js/environment.js?v=6"></script>
+  <script src="js/weather.js?v=5"></script>
+  <script src="js/audio.js?v=5"></script>
+  <script src="js/ui.js?v=5"></script>
+  <script src="js/main.js?v=5"></script>
 
   <!-- Car color chips -->
   <script>

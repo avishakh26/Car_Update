@@ -524,14 +524,27 @@ const Environment = (() => {
     });
 
     // === CONTINUOUS TRUE OBJECT STREAMING ===
-    // Seamlessly recycle instances that fall behind the car and securely spawn them far ahead in the unseen fog.
+    // Seamlessly recycle instances that fall behind the car and securely spawn them far ahead.
+    
+    // Calculate the car's true forward vector
+    const cPt1 = Road.getCurvePoint(G.roadT);
+    const cPt2 = Road.getCurvePoint(Math.min(1, G.roadT + 0.001));
+    const carForward = new THREE.Vector3().subVectors(cPt2, cPt1).normalize();
+
     let treesUpdated = false;
     const streamTrees = (arr, inst, trunkInst, latMin, latMax) => {
       if (!inst) return;
       for(let i=0; i<arr.length; i++) {
         if (!arr[i]) continue;
-        if (arr[i].z > carPos.z + 50) {
-          // Send back into the fog (convert fractional distance to guarantee 600m to 1200m ahead of camera)
+        
+        // Calculate distance along the car's forward axis
+        const dx = arr[i].x - carPos.x;
+        const dz = arr[i].z - carPos.z;
+        const distForward = dx * carForward.x + dz * carForward.z;
+
+        // If the tree is more than 200 units physically behind the car's forward direction
+        if (distForward < -200) {
+          // Send back into the fog (guarantee 600m to 1200m ahead of camera)
           const cLen = Road.getCurveLen() || 3000;
           const targetT = Math.min(0.99, G.roadT + (600 / cLen) + Math.random() * (600 / cLen));
           const roadPt = Road.getCurvePoint(targetT);
@@ -585,7 +598,11 @@ const Environment = (() => {
         grassInst.getMatrixAt(i, mGrass);
         posGrass.setFromMatrixPosition(mGrass);
         
-        if (posGrass.z > carPos.z + 50) {
+        const dx = posGrass.x - carPos.x;
+        const dz = posGrass.z - carPos.z;
+        const distForward = dx * carForward.x + dz * carForward.z;
+
+        if (distForward < -200) {
           const cLen = Road.getCurveLen() || 3000;
           const targetT = Math.min(0.99, G.roadT + (500 / cLen) + Math.random() * (700 / cLen));
           const roadPt = Road.getCurvePoint(targetT);
@@ -603,10 +620,8 @@ const Environment = (() => {
           
           mGrass.decompose(posGrass, qRot, vScale);
           
-          // Rebuild matrices identical directly without expensive decomposed euler
           dummy.position.set(spawnPt.x, y, spawnPt.z);
           dummy.scale.copy(vScale);
-          // Need tilt from euler logic? We can just randomize!
           const tilt = (Math.random() - 0.5) * 0.45;
           dummy.rotation.set(tilt, Math.random() * Math.PI, tilt * 0.6);
           dummy.updateMatrix();

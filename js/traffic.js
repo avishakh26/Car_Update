@@ -135,7 +135,22 @@ const Traffic = (() => {
     }
 
     const len = Road._curveLength || 3000;
-    npcs.forEach(npc => {
+    for (let i = npcs.length - 1; i >= 0; i--) {
+      const npc = npcs[i];
+
+      // Blinking & Removal logic
+      if (npc.blinkingTimer !== undefined) {
+        npc.blinkingTimer -= dt;
+        // 4 blinks in 1 second -> 8 toggles -> toggle every 0.125s
+        npc.group.visible = Math.floor(npc.blinkingTimer / 0.125) % 2 === 0;
+
+        if (npc.blinkingTimer <= 0) {
+          scene.remove(npc.group);
+          npcs.splice(i, 1);
+          continue;
+        }
+      }
+
       // Advance NPC along road
       const tPerSec = npc.speed / (Road._curveLen || 3000);
       npc.t += tPerSec * dt;
@@ -149,7 +164,7 @@ const Traffic = (() => {
       // Get world position from road curve
       try {
         const pt = Road._getPointAt(npc.t, npc.lateralOffset);
-        if (!pt) return;
+        if (!pt) continue;
         const { pos, quat } = pt;
 
         pos.y += 0.38; // sit on road
@@ -171,16 +186,19 @@ const Traffic = (() => {
           }
 
           // --- Collision Detection ---
-          if (G.crashed <= 0 && pos.distanceToSquared(Vehicle.getRoot().position) < 14.5) { // increased from 12.0
+          if (G.crashed <= 0 && npc.blinkingTimer === undefined && pos.distanceToSquared(Vehicle.getRoot().position) < 14.5) { // increased from 12.0
              G.crashed = 0.8; // Reduced crash stun time so you don't get completely stuck
              G.carSpeed = Math.max(0, G.carSpeed - 15); // Less penalty for smoother overtaking
              
              // Spawn sparks at crash point (midpoint between player and NPC)
              const crashPos = new THREE.Vector3().copy(pos).lerp(Vehicle.getRoot().position, 0.5);
              spawnSparks(crashPos);
+
+             // Start blinking the enemy car (4 times over 1 second)
+             npc.blinkingTimer = 1.0;
           }
       } catch(e) { }
-    });
+    }
   }
 
   return { init, update };

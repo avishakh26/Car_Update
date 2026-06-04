@@ -13,9 +13,7 @@ const UI = (() => {
       // Disable autodrive on any explicit driving input
       if (['ArrowUp', 'w', 'W', 'ArrowDown', 's', 'S', 'ArrowLeft', 'a', 'A', 'ArrowRight', 'd', 'D'].includes(k)) {
         if (G.autodrive) {
-          G.autodrive = false;
-          const btn = document.getElementById('btn-autodrive');
-          if (btn) btn.classList.remove('active');
+          setAutodrive(false);
         }
       }
       if (k === 'ArrowLeft'  || k === 'a' || k === 'A') {
@@ -36,34 +34,32 @@ const UI = (() => {
       if (k === 'ArrowDown'  || k === 's' || k === 'S') G.keys.down  = false;
     });
 
-    // Touch/mobile
-    document.addEventListener('touchstart', handleTouch, { passive: true });
-    document.addEventListener('touchend',   handleTouchEnd, { passive: true });
+    // Mobile controls setup
+    bindBtn('mLeft', 'left');
+    bindBtn('mRight', 'right');
+    bindBtn('mGas', 'up');
+    bindBtn('mBrake', 'down');
   }
 
-  let touchStartX = 0;
-  function handleTouch(e) {
-    if (!G.started) return;
+  function bindBtn(id, key) {
+    const el = document.getElementById(id);
+    if (!el) return;
     
-    // Disable autodrive on any manual touch input
-    if (G.autodrive) {
-      G.autodrive = false;
-      const btn = document.getElementById('btn-autodrive');
-      if (btn) btn.classList.remove('active');
-    }
+    const press = (e) => {
+      e.preventDefault();
+      if (G.autodrive) setAutodrive(false);
+      G.keys[key] = true;
+    };
+    const release = (e) => {
+      e.preventDefault();
+      G.keys[key] = false;
+    };
 
-    const t = e.touches[0];
-    touchStartX = t.clientX;
-    if (t.clientX < window.innerWidth * 0.4) {
-      G.keys.left = true;
-    }
-    else if (t.clientX > window.innerWidth * 0.6) {
-      G.keys.right = true;
-    }
-    else G.keys.up = true;
-  }
-  function handleTouchEnd() {
-    G.keys.left = G.keys.right = G.keys.up = false;
+    el.addEventListener('touchstart', press, { passive: false });
+    el.addEventListener('touchend', release, { passive: false });
+    el.addEventListener('mousedown', press);
+    el.addEventListener('mouseup', release);
+    el.addEventListener('mouseleave', release);
   }
 
   function closeSettings() {
