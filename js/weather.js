@@ -10,21 +10,28 @@ const Weather = (() => {
 
   function createRain() {
     const geo = new THREE.BufferGeometry();
-    const pos = new Float32Array(PARTICLE_COUNT * 3);
+    const pos = new Float32Array(PARTICLE_COUNT * 6); // 2 vertices per line
     const vel = new Float32Array(PARTICLE_COUNT);
     for (let i = 0; i < PARTICLE_COUNT; i++) {
-      pos[i*3]   = (Math.random() - 0.5) * 120;
-      pos[i*3+1] = Math.random() * 80;
-      pos[i*3+2] = (Math.random() - 0.5) * 120;
-      vel[i] = 28 + Math.random() * 12;
+      const x = (Math.random() - 0.5) * 120;
+      const y = Math.random() * 80;
+      const z = (Math.random() - 0.5) * 120;
+      const rainLength = 1.5 + Math.random() * 2; // Realistic rain streak length
+      pos[i*6]   = x;
+      pos[i*6+1] = y;
+      pos[i*6+2] = z;
+      pos[i*6+3] = x;
+      pos[i*6+4] = y - rainLength;
+      pos[i*6+5] = z;
+      vel[i] = 100 + Math.random() * 50; // Faster falling for realism
     }
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     geo.userData.vel = vel;
-    const mat = new THREE.PointsMaterial({
-      color: 0xcceeff, size: 1.5, transparent: true, opacity: 0.8,
-      sizeAttenuation: false, blending: THREE.AdditiveBlending, depthWrite: false
+    const mat = new THREE.LineBasicMaterial({
+      color: 0x88bbcc, transparent: true, opacity: 0.35,
+      blending: THREE.AdditiveBlending, depthWrite: false
     });
-    rainSystem = new THREE.Points(geo, mat);
+    rainSystem = new THREE.LineSegments(geo, mat);
     rainSystem.visible = false;
     rainSystem.frustumCulled = false;
     scene.add(rainSystem);
@@ -87,18 +94,33 @@ const Weather = (() => {
       const pos = rainSystem.geometry.attributes.position.array;
       const vel = rainSystem.geometry.userData.vel;
       for (let i = 0; i < PARTICLE_COUNT; i++) {
-        pos[i*3]   += moveX;
-        pos[i*3+2] += moveZ;
-        pos[i*3+1] -= vel[i] * dt;
+        pos[i*6]   += moveX;
+        pos[i*6+2] += moveZ;
+        pos[i*6+1] -= vel[i] * dt;
+        
+        pos[i*6+3] += moveX;
+        pos[i*6+5] += moveZ;
+        pos[i*6+4] -= vel[i] * dt;
         
         // Wrap X and Z
-        let dx = pos[i*3] - carPos.x;
-        let dz = pos[i*3+2] - carPos.z;
-        if (dx > 60) pos[i*3] -= 120; else if (dx < -60) pos[i*3] += 120;
-        if (dz > 60) pos[i*3+2] -= 120; else if (dz < -60) pos[i*3+2] += 120;
+        let dx = pos[i*6] - carPos.x;
+        let dz = pos[i*6+2] - carPos.z;
+        if (dx > 60) {
+          pos[i*6] -= 120; pos[i*6+3] -= 120;
+        } else if (dx < -60) {
+          pos[i*6] += 120; pos[i*6+3] += 120;
+        }
 
-        if (pos[i*3+1] < carPos.y - 2) {
-          pos[i*3+1] += 60 + Math.random() * 20;
+        if (dz > 60) {
+          pos[i*6+2] -= 120; pos[i*6+5] -= 120;
+        } else if (dz < -60) {
+          pos[i*6+2] += 120; pos[i*6+5] += 120;
+        }
+
+        if (pos[i*6+1] < carPos.y - 2) {
+          const shiftY = 60 + Math.random() * 20;
+          pos[i*6+1] += shiftY;
+          pos[i*6+4] += shiftY;
         }
       }
       rainSystem.geometry.attributes.position.needsUpdate = true;

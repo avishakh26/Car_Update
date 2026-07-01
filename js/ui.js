@@ -134,9 +134,7 @@ function setSpeedLimit(v) {
 }
 
 function toggleCameraMode() {
-  G.cameraMode = (G.cameraMode === 'TPP') ? 'FPP' : 'TPP';
-  const btn = document.getElementById('cameraBtn');
-  if (btn) btn.innerText = 'Cam: ' + G.cameraMode;
+  // Ignored FPP mode
 }
 
 // Spawn twinkle stars on splash
